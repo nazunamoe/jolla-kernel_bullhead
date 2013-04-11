@@ -3378,12 +3378,8 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
 
 static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
 {
-<<<<<<< HEAD
 	__update_entity_runnable_avg(cpu_of(rq), rq->clock_task,
 						 &rq->avg, runnable);
-=======
-	__update_entity_runnable_avg(rq_clock_task(rq), &rq->avg, runnable);
->>>>>>> 7534675... sched: Use an accessor to read the rq clock
 	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
 }
 
