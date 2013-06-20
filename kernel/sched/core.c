@@ -3657,6 +3657,7 @@ static void __sched_fork(struct task_struct *p)
 
 	INIT_LIST_HEAD(&p->se.group_node);
 
+<<<<<<< HEAD
 /*
  * Load-tracking only depends on SMP, FAIR_GROUP_SCHED dependency below may be
  * removed when useful for applications beyond shares distribution (e.g.
@@ -3665,6 +3666,8 @@ static void __sched_fork(struct task_struct *p)
 #if defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)
 	init_new_task_load(p);
 #endif
+=======
+>>>>>>> 9767130... sched: Set an initial value of runnable avg for new forked task
 #ifdef CONFIG_SCHEDSTATS
 	memset(&p->se.statistics, 0, sizeof(p->se.statistics));
 #endif
@@ -3808,6 +3811,8 @@ void wake_up_new_task(struct task_struct *p)
 	set_task_cpu(p, select_task_rq(p, SD_BALANCE_FORK, 0));
 #endif
 
+	/* Initialize new task's runnable average */
+	init_task_runnable_average(p);
 	rq = __task_rq_lock(p);
 	mark_task_starting(p);
 	activate_task(rq, p, 0);
