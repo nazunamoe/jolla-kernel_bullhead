@@ -25,6 +25,7 @@
 #include <linux/clockchips.h>
 #include <linux/completion.h>
 #include <linux/cpufreq.h>
+#include <linux/irq_work.h>
 
 #include <linux/atomic.h>
 #include <asm/smp.h>
@@ -53,6 +54,9 @@
  */
 struct secondary_data secondary_data;
 
+#define CREATE_TRACE_POINTS
+#include <trace/events/ipi.h>
+
 /*
  * control for which core is the next to come out of the secondary
  * boot "holding pen"
@@ -67,6 +71,8 @@ enum ipi_msg_type {
 	IPI_CALL_FUNC_SINGLE,
 	IPI_CPU_STOP,
 	IPI_CPU_BACKTRACE,
+	IPI_IRQ_WORK,
+	IPI_COMPLETION,
 };
 
 static DECLARE_COMPLETION(cpu_running);
@@ -433,6 +439,7 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
 	}
 }
 
+<<<<<<< HEAD
 static void (*smp_cross_call)(const struct cpumask *, unsigned int);
 DEFINE_PER_CPU(bool, pending_ipi);
 
@@ -469,6 +476,17 @@ void arch_send_call_function_single_ipi(int cpu)
 }
 
 static const char *ipi_types[NR_IPI] = {
+=======
+static void (*__smp_cross_call)(const struct cpumask *, unsigned int);
+
+void __init set_smp_cross_call(void (*fn)(const struct cpumask *, unsigned int))
+{
+	if (!__smp_cross_call)
+		__smp_cross_call = fn;
+}
+
+static const char *ipi_types[NR_IPI] __tracepoint_string = {
+>>>>>>> 69aa39a... backported 'Energy-Aware Scheduling (EAS) Project'
 #define S(x,s)	[x] = s
 	S(IPI_WAKEUP, "CPU wakeup interrupts"),
 	S(IPI_TIMER, "Timer broadcast interrupts"),
@@ -477,7 +495,15 @@ static const char *ipi_types[NR_IPI] = {
 	S(IPI_CALL_FUNC_SINGLE, "Single function call interrupts"),
 	S(IPI_CPU_STOP, "CPU stop interrupts"),
 	S(IPI_CPU_BACKTRACE, "CPU backtrace"),
+	S(IPI_IRQ_WORK, "IRQ work interrupts"),
+	S(IPI_COMPLETION, "completion interrupts"),
 };
+
+static void smp_cross_call(const struct cpumask *target, unsigned int ipinr)
+{
+	trace_ipi_raise(target, ipi_types[ipinr]);
+	__smp_cross_call(target, ipinr);
+}
 
 void show_ipi_list(struct seq_file *p, int prec)
 {
@@ -509,6 +535,29 @@ u64 smp_irq_stat_cpu(unsigned int cpu)
  * Timer (local or broadcast) support
  */
 static DEFINE_PER_CPU(struct clock_event_device, percpu_clockevent);
+
+void arch_send_call_function_ipi_mask(const struct cpumask *mask)
+{
+	smp_cross_call(mask, IPI_CALL_FUNC);
+}
+
+void arch_send_wakeup_ipi_mask(const struct cpumask *mask)
+{
+	smp_cross_call(mask, IPI_WAKEUP);
+}
+
+void arch_send_call_function_single_ipi(int cpu)
+{
+	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
+}
+
+#ifdef CONFIG_IRQ_WORK
+void arch_irq_work_raise(void)
+{
+	if (is_smp())
+		smp_cross_call(cpumask_of(smp_processor_id()), IPI_IRQ_WORK);
+}
+#endif
 
 #ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
 void tick_broadcast(const struct cpumask *mask)
@@ -659,6 +708,19 @@ static void ipi_cpu_backtrace(unsigned int cpu, struct pt_regs *regs)
 	}
 }
 
+static DEFINE_PER_CPU(struct completion *, cpu_completion);
+
+int register_ipi_completion(struct completion *completion, int cpu)
+{
+	per_cpu(cpu_completion, cpu) = completion;
+	return IPI_COMPLETION;
+}
+
+static void ipi_complete(unsigned int cpu)
+{
+	complete(per_cpu(cpu_completion, cpu));
+}
+
 /*
  * Main handler for inter-processor interrupts
  */
@@ -672,8 +734,10 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
 	unsigned int cpu = smp_processor_id();
 	struct pt_regs *old_regs = set_irq_regs(regs);
 
-	if (ipinr < NR_IPI)
+	if ((unsigned)ipinr < NR_IPI) {
+		trace_ipi_entry(ipi_types[ipinr]);
 		__inc_irq_stat(cpu, ipi_irqs[ipinr]);
+	}
 
 	switch (ipinr) {
 	case IPI_WAKEUP:
@@ -713,6 +777,19 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
 		ipi_cpu_backtrace(cpu, regs);
 		break;
 
+#ifdef CONFIG_IRQ_WORK
+	case IPI_IRQ_WORK:
+		irq_enter();
+		irq_work_run();
+		irq_exit();
+		break;
+#endif
+	case IPI_COMPLETION:
+		irq_enter();
+		ipi_complete(cpu);
+		irq_exit();
+		break;
+
 	default:
 		printk(KERN_CRIT "CPU%u: Unknown IPI message 0x%x\n",
 		       cpu, ipinr);
@@ -720,6 +797,8 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
 	}
 	per_cpu(pending_ipi, cpu) = false;
 
+	if ((unsigned)ipinr < NR_IPI)
+		trace_ipi_exit(ipi_types[ipinr]);
 	set_irq_regs(old_regs);
 }
 

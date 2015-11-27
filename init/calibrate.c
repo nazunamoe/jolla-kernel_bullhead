@@ -166,7 +166,14 @@ static unsigned long calibrate_delay_direct(void)
 	return 0;
 }
 #else
+<<<<<<< HEAD
 static unsigned long calibrate_delay_direct(void) {return 0;}
+=======
+static unsigned long calibrate_delay_direct(void)
+{
+	return 0;
+}
+>>>>>>> 69aa39a... backported 'Energy-Aware Scheduling (EAS) Project'
 #endif
 
 /*

@@ -24,7 +24,11 @@
  */
 static DEFINE_PER_CPU(struct task_struct *, idle_threads);
 
+<<<<<<< HEAD
 struct task_struct * idle_thread_get(unsigned int cpu)
+=======
+struct task_struct *idle_thread_get(unsigned int cpu)
+>>>>>>> 69aa39a... backported 'Energy-Aware Scheduling (EAS) Project'
 {
 	struct task_struct *tsk = per_cpu(idle_threads, cpu);
 

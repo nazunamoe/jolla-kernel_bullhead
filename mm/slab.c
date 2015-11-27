@@ -1180,6 +1180,15 @@ static int init_cache_node_node(int node)
 	return 0;
 }
 
+<<<<<<< HEAD
+=======
+static inline int slabs_tofree(struct kmem_cache *cachep,
+						struct kmem_cache_node *n)
+{
+	return (n->free_objects + cachep->num - 1) / cachep->num;
+}
+
+>>>>>>> 69aa39a... backported 'Energy-Aware Scheduling (EAS) Project'
 static void cpuup_canceled(long cpu)
 {
 	struct kmem_cache *cachep;
