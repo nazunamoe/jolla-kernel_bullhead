@@ -129,11 +129,7 @@ enum {
 /* Need to know about CPUs going up/down? */
 #if defined(CONFIG_HOTPLUG_CPU) || !defined(MODULE)
 #define cpu_notifier(fn, pri) {					\
-<<<<<<< HEAD
 	static struct notifier_block fn##_nb =	\
-=======
-	static struct notifier_block fn##_nb =			\
->>>>>>> 69aa39a... backported 'Energy-Aware Scheduling (EAS) Project'
 		{ .notifier_call = fn, .priority = pri };	\
 	register_cpu_notifier(&fn##_nb);			\
 }

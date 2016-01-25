@@ -67,11 +67,6 @@ enum clock_event_mode {
  */
 #define CLOCK_EVT_FEAT_HRTIMER		0x000080
 
-/*
- * Clockevent device is based on a hrtimer for broadcast
- */
-#define CLOCK_EVT_FEAT_HRTIMER		0x000080
-
 /**
  * struct clock_event_device - clock event device descriptor
  * @event_handler:	Assigned by the framework to be called by the low
@@ -195,11 +190,7 @@ extern void tick_setup_hrtimer_broadcast(void);
 extern int tick_check_broadcast_expired(void);
 #else
 static inline int tick_check_broadcast_expired(void) { return 0; }
-<<<<<<< HEAD
 static inline void tick_setup_hrtimer_broadcast(void) {};
-=======
-static void tick_setup_hrtimer_broadcast(void) {};
->>>>>>> 69aa39a... backported 'Energy-Aware Scheduling (EAS) Project'
 #endif
 
 #ifdef CONFIG_GENERIC_CLOCKEVENTS
@@ -215,7 +206,6 @@ static inline void clockevents_resume(void) {}
 
 static inline int clockevents_notify(unsigned long reason, void *arg) { return 0; }
 static inline int tick_check_broadcast_expired(void) { return 0; }
-static inline void tick_setup_hrtimer_broadcast(void) {};
 
 #endif
 

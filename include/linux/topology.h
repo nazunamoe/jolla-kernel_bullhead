@@ -66,7 +66,6 @@ int arch_update_cpu_topology(void);
 #define PENALTY_FOR_NODE_WITH_CPUS	(1)
 #endif
 
-<<<<<<< HEAD
 /*
  * Below are the 3 major initializers used in building sched_domains:
  * SD_SIBLING_INIT, for SMT domains
@@ -176,8 +175,6 @@ int arch_update_cpu_topology(void);
 #endif
 #endif /* CONFIG_SCHED_BOOK */
 
-=======
->>>>>>> 69aa39a... backported 'Energy-Aware Scheduling (EAS) Project'
 #ifdef CONFIG_USE_PERCPU_NUMA_NODE_ID
 DECLARE_PER_CPU(int, numa_node);
 
@@ -291,18 +288,5 @@ static inline int cpu_to_mem(int cpu)
 #ifndef topology_core_cpumask
 #define topology_core_cpumask(cpu)		cpumask_of(cpu)
 #endif
-
-#ifdef CONFIG_SCHED_SMT
-static inline const struct cpumask *cpu_smt_mask(int cpu)
-{
-	return topology_thread_cpumask(cpu);
-}
-#endif
-
-static inline const struct cpumask *cpu_cpu_mask(int cpu)
-{
-	return cpumask_of_node(cpu_to_node(cpu));
-}
-
 
 #endif /* _LINUX_TOPOLOGY_H */

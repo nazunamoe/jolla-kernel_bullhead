@@ -61,11 +61,7 @@ static inline void sched_info_reset_dequeued(struct task_struct *t)
  */
 static inline void sched_info_dequeued(struct task_struct *t)
 {
-<<<<<<< HEAD
 	unsigned long long now = task_rq(t)->clock, delta = 0;
-=======
-	unsigned long long now = rq_clock(task_rq(t)), delta = 0;
->>>>>>> 69aa39a... backported 'Energy-Aware Scheduling (EAS) Project'
 
 	if (unlikely(sched_info_on()))
 		if (t->sched_info.last_queued)
@@ -104,11 +100,7 @@ static inline void sched_info_queued(struct task_struct *t)
 {
 	if (unlikely(sched_info_on()))
 		if (!t->sched_info.last_queued)
-<<<<<<< HEAD
 			t->sched_info.last_queued = task_rq(t)->clock;
-=======
-			t->sched_info.last_queued = rq_clock(task_rq(t));
->>>>>>> 69aa39a... backported 'Energy-Aware Scheduling (EAS) Project'
 }
 
 /*
@@ -120,12 +112,7 @@ static inline void sched_info_queued(struct task_struct *t)
  */
 static inline void sched_info_depart(struct task_struct *t)
 {
-<<<<<<< HEAD
 	unsigned long long delta = task_rq(t)->clock -
-=======
-	unsigned long long delta = rq_clock(rq) -
-	unsigned long long delta = rq_clock(task_rq(t)) -
->>>>>>> 69aa39a... backported 'Energy-Aware Scheduling (EAS) Project'
 					t->sched_info.last_arrival;
 
 	rq_sched_info_depart(task_rq(t), delta);

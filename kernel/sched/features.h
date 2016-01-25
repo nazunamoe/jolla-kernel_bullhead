@@ -37,22 +37,18 @@ SCHED_FEAT(CACHE_HOT_BUDDY, true)
 SCHED_FEAT(WAKEUP_PREEMPTION, true)
 
 /*
- * Use arch dependent cpu capacity functions
+ * Use arch dependent cpu power functions
  */
-<<<<<<< HEAD
 SCHED_FEAT(ARCH_POWER, false)
-=======
-SCHED_FEAT(ARCH_CAPACITY, true)
->>>>>>> 69aa39a... backported 'Energy-Aware Scheduling (EAS) Project'
 
 SCHED_FEAT(HRTICK, false)
 SCHED_FEAT(DOUBLE_TICK, false)
 SCHED_FEAT(LB_BIAS, true)
 
 /*
- * Decrement CPU capacity based on time not spent running tasks
+ * Decrement CPU power based on time not spent running tasks
  */
-SCHED_FEAT(NONTASK_CAPACITY, true)
+SCHED_FEAT(NONTASK_POWER, true)
 
 /*
  * Queue remote wakeups on the target CPU and process them
@@ -73,13 +69,6 @@ SCHED_FEAT(LB_MIN, false)
 #ifdef CONFIG_NUMA_BALANCING
 SCHED_FEAT(NUMA,	false)
 SCHED_FEAT(NUMA_FORCE,	false)
-
-/*
- * NUMA_FAVOUR_HIGHER will favor moving tasks towards nodes where a
- * higher number of hinting faults are recorded during active load
- * balancing.
- */
-SCHED_FEAT(NUMA_FAVOUR_HIGHER, true)
 #endif
 
 SCHED_FEAT(FORCE_CPU_THROTTLING_IMMINENT, false)

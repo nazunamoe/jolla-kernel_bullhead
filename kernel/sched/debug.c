@@ -70,7 +70,7 @@ static void print_cfs_group_stats(struct seq_file *m, int cpu, struct task_group
 	if (!se) {
 		struct sched_avg *avg = &cpu_rq(cpu)->avg;
 		P(avg->runnable_avg_sum);
-		P(avg->avg_period);
+		P(avg->runnable_avg_period);
 		return;
 	}
 
@@ -93,12 +93,7 @@ static void print_cfs_group_stats(struct seq_file *m, int cpu, struct task_group
 	P(se->load.weight);
 #ifdef CONFIG_SMP
 	P(se->avg.runnable_avg_sum);
-<<<<<<< HEAD
 	P(se->avg.runnable_avg_period);
-=======
-	P(se->avg.avg_period);
-	P(se->avg.usage_avg_sum);
->>>>>>> 69aa39a... backported 'Energy-Aware Scheduling (EAS) Project'
 	P(se->avg.load_avg_contrib);
 	P(se->avg.decay_count);
 #endif
@@ -220,11 +215,9 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
 			cfs_rq->runnable_load_avg);
 	SEQ_printf(m, "  .%-30s: %lld\n", "blocked_load_avg",
 			cfs_rq->blocked_load_avg);
-	SEQ_printf(m, "  .%-30s: %ld\n", "tg_load_avg",
-			atomic_long_read(&cfs_rq->tg->load_avg));
-	SEQ_printf(m, "  .%-30s: %ld\n", "utilization_load_avg",
-			cfs_rq->utilization_load_avg);
-	SEQ_printf(m, "  .%-30s: %ld\n", "tg_load_contrib",
+	SEQ_printf(m, "  .%-30s: %lld\n", "tg_load_avg",
+			(unsigned long long)atomic64_read(&cfs_rq->tg->load_avg));
+	SEQ_printf(m, "  .%-30s: %lld\n", "tg_load_contrib",
 			cfs_rq->tg_load_contrib);
 	SEQ_printf(m, "  .%-30s: %d\n", "tg_runnable_contrib",
 			cfs_rq->tg_runnable_contrib);
@@ -248,14 +241,6 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
 	SEQ_printf(m, "  .%-30s: %llu\n", "cumulative_runnable_avg",
 			cfs_rq->hmp_stats.cumulative_runnable_avg);
 #endif
-#endif
-#ifdef CONFIG_CFS_BANDWIDTH
-	SEQ_printf(m, "  .%-30s: %d\n", "tg->cfs_bandwidth.timer_active",
-			cfs_rq->tg->cfs_bandwidth.timer_active);
-	SEQ_printf(m, "  .%-30s: %d\n", "throttled",
-			cfs_rq->throttled);
-	SEQ_printf(m, "  .%-30s: %d\n", "throttle_count",
-			cfs_rq->throttle_count);
 #endif
 
 	print_cfs_group_stats(m, cpu, cfs_rq->tg);
@@ -360,7 +345,6 @@ do {									\
 	P(sched_goidle);
 #ifdef CONFIG_SMP
 	P64(avg_idle);
-	P64(max_idle_balance_cost);
 #endif
 
 	P(ttwu_count);
@@ -646,17 +630,6 @@ void proc_sched_show_task(struct task_struct *p, struct seq_file *m)
 		   "nr_involuntary_switches", (long long)p->nivcsw);
 
 	P(se.load.weight);
-<<<<<<< HEAD
-=======
-#if defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)
-	P(se.avg.runnable_avg_sum);
-	P(se.avg.running_avg_sum);
-	P(se.avg.avg_period);
-	P(se.avg.load_avg_contrib);
-	P(se.avg.utilization_avg_contrib);
-	P(se.avg.decay_count);
-#endif
->>>>>>> 69aa39a... backported 'Energy-Aware Scheduling (EAS) Project'
 	P(policy);
 	P(prio);
 #undef PN

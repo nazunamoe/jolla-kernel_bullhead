@@ -28,11 +28,7 @@ unsigned long this_cpu_load(void)
  *
  *   nr_active = 0;
  *   for_each_possible_cpu(cpu)
-<<<<<<< HEAD
  *   	nr_active += cpu_of(cpu)->nr_running + cpu_of(cpu)->nr_uninterruptible;
-=======
- *	nr_active += cpu_of(cpu)->nr_running + cpu_of(cpu)->nr_uninterruptible;
->>>>>>> 69aa39a... backported 'Energy-Aware Scheduling (EAS) Project'
  *
  *   avenrun[n] = avenrun[0] * exp_n + nr_active * (1 - exp_n)
  *
@@ -67,13 +63,8 @@ unsigned long this_cpu_load(void)
  */
 
 /* Variables and functions for calc_load */
-<<<<<<< HEAD
 static atomic_long_t calc_load_tasks;
 static unsigned long calc_load_update;
-=======
-atomic_long_t calc_load_tasks;
-unsigned long calc_load_update;
->>>>>>> 69aa39a... backported 'Energy-Aware Scheduling (EAS) Project'
 unsigned long avenrun[3];
 EXPORT_SYMBOL(avenrun); /* should be removed */
 
@@ -92,11 +83,7 @@ void get_avenrun(unsigned long *loads, unsigned long offset, int shift)
 	loads[2] = (avenrun[2] + offset) << shift;
 }
 
-<<<<<<< HEAD
 static long calc_load_fold_active(struct rq *this_rq)
-=======
-long calc_load_fold_active(struct rq *this_rq)
->>>>>>> 69aa39a... backported 'Energy-Aware Scheduling (EAS) Project'
 {
 	long nr_active, delta = 0;
 
@@ -514,21 +501,6 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
 	sched_avg_update(this_rq);
 }
 
-<<<<<<< HEAD
-=======
-#ifdef CONFIG_SMP
-static inline unsigned long get_rq_runnable_load(struct rq *rq)
-{
-	return rq->cfs.runnable_load_avg;
-}
-#else
-static inline unsigned long get_rq_runnable_load(struct rq *rq)
-{
-	return rq->load.weight;
-}
-#endif
-
->>>>>>> 69aa39a... backported 'Energy-Aware Scheduling (EAS) Project'
 #ifdef CONFIG_NO_HZ_COMMON
 /*
  * There is no sane way to deal with nohz on smp when using jiffies because the
@@ -550,11 +522,7 @@ static inline unsigned long get_rq_runnable_load(struct rq *rq)
 void update_idle_cpu_load(struct rq *this_rq)
 {
 	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
-<<<<<<< HEAD
 	unsigned long load = this_rq->load.weight;
-=======
-	unsigned long load = get_rq_runnable_load(this_rq);
->>>>>>> 69aa39a... backported 'Energy-Aware Scheduling (EAS) Project'
 	unsigned long pending_updates;
 
 	/*
@@ -593,32 +561,18 @@ void update_cpu_load_nohz(void)
 	}
 	raw_spin_unlock(&this_rq->lock);
 }
-<<<<<<< HEAD
 #endif /* CONFIG_NO_HZ_COMMON */
-=======
-#endif /* CONFIG_NO_HZ */
->>>>>>> 69aa39a... backported 'Energy-Aware Scheduling (EAS) Project'
 
 /*
  * Called from scheduler_tick()
  */
-<<<<<<< HEAD
 static void update_cpu_load_active(struct rq *this_rq)
 {
-=======
-void update_cpu_load_active(struct rq *this_rq)
-{
-	unsigned long load = get_rq_runnable_load(this_rq);
->>>>>>> 69aa39a... backported 'Energy-Aware Scheduling (EAS) Project'
 	/*
 	 * See the mess around update_idle_cpu_load() / update_cpu_load_nohz().
 	 */
 	this_rq->last_load_update_tick = jiffies;
-<<<<<<< HEAD
 	__update_cpu_load(this_rq, this_rq->load.weight, 1);
-=======
-	__update_cpu_load(this_rq, load, 1);
->>>>>>> 69aa39a... backported 'Energy-Aware Scheduling (EAS) Project'
 
 	calc_load_account_active(this_rq);
 }
