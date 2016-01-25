@@ -1161,7 +1161,6 @@ void check_preempt_curr(struct rq *rq, struct task_struct *p, int flags)
 		rq->skip_clock_update = 1;
 }
 
-<<<<<<< HEAD
 static ATOMIC_NOTIFIER_HEAD(task_migration_notifier);
 
 void register_task_migration_notifier(struct notifier_block *n)
@@ -1172,10 +1171,6 @@ void register_task_migration_notifier(struct notifier_block *n)
 #ifdef CONFIG_SCHED_HMP
 
 static int __init set_sched_enable_hmp(char *str)
-=======
-#ifdef CONFIG_SMP
-void set_task_cpu(struct task_struct *p, unsigned int new_cpu)
->>>>>>> 200296f... remove sched notifier for cross-cpu migrations
 {
 	int enable_hmp = 0;
 
@@ -1183,7 +1178,6 @@ void set_task_cpu(struct task_struct *p, unsigned int new_cpu)
 
 	sched_enable_hmp = !!enable_hmp;
 
-<<<<<<< HEAD
 	return 0;
 }
 
@@ -1194,14 +1188,6 @@ static int __init set_sched_enable_power_aware(char *str)
 	int enable_power_aware = 0;
 
 	get_option(&str, &enable_power_aware);
-=======
-	if (task_cpu(p) != new_cpu) {
-		if (p->sched_class->migrate_task_rq)
-			p->sched_class->migrate_task_rq(p, new_cpu);
-		p->se.nr_migrations++;
-		perf_sw_event(PERF_COUNT_SW_CPU_MIGRATIONS, 1, NULL, 0);
-	}
->>>>>>> 200296f... remove sched notifier for cross-cpu migrations
 
 	sysctl_sched_enable_power_aware = !!enable_power_aware;
 
