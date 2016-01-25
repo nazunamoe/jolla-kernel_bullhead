@@ -1093,7 +1093,7 @@ static inline long calc_tg_weight(struct task_group *tg, struct cfs_rq *cfs_rq)
 	 * to gain a more accurate current total weight. See
 	 * update_cfs_rq_load_contribution().
 	 */
-	tg_weight = atomic_long_read(&tg->load_avg);
+	tg_weight = atomic64_read(&tg->load_avg);
 	tg_weight -= cfs_rq->tg_load_contrib;
 	tg_weight += cfs_rq->load.weight;
 
@@ -1396,7 +1396,6 @@ int __read_mostly sysctl_sched_upmigrate_min_nice = 15;
  */
 unsigned int up_down_migrate_scale_factor = 1024;
 
-<<<<<<< HEAD
 /*
  * Scheduler boost is a mechanism to temporarily place tasks on CPUs
  * with higher capacity than those where a task would have normally
@@ -1404,27 +1403,12 @@ unsigned int up_down_migrate_scale_factor = 1024;
  * boost is responsible for disabling it as well.
  */
 unsigned int sysctl_sched_boost;
-=======
-#ifdef CONFIG_FAIR_GROUP_SCHED
-static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
-						 int force_update)
-{
-	struct task_group *tg = cfs_rq->tg;
-	long tg_contrib;
->>>>>>> 0629df6... sched/tg: Use 'unsigned long' for load variable in task group
 
 static inline int available_cpu_capacity(int cpu)
 {
 	struct rq *rq = cpu_rq(cpu);
 
-<<<<<<< HEAD
 	return rq->capacity;
-=======
-	if (force_update || abs(tg_contrib) > cfs_rq->tg_load_contrib / 8) {
-		atomic_long_add(tg_contrib, &tg->load_avg);
-		cfs_rq->tg_load_contrib += tg_contrib;
-	}
->>>>>>> 0629df6... sched/tg: Use 'unsigned long' for load variable in task group
 }
 
 void update_up_down_migrate(void)
@@ -1464,13 +1448,7 @@ void set_hmp_defaults(void)
 	sched_small_task =
 		pct_to_real(sysctl_sched_small_task_pct);
 
-<<<<<<< HEAD
 	update_up_down_migrate();
-=======
-	contrib = cfs_rq->tg_load_contrib * tg->shares;
-	se->avg.load_avg_contrib = div_u64(contrib,
-				     atomic_long_read(&tg->load_avg) + 1);
->>>>>>> 0629df6... sched/tg: Use 'unsigned long' for load variable in task group
 
 #ifdef CONFIG_SCHED_FREQ_INPUT
 	sched_heavy_task =
