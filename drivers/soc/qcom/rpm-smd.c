@@ -29,7 +29,6 @@
 #include <linux/device.h>
 #include <linux/notifier.h>
 #include <linux/slab.h>
-#include <linux/workqueue.h>
 #include <linux/platform_device.h>
 #include <linux/of.h>
 #include <linux/of_platform.h>
@@ -56,7 +55,6 @@ struct msm_rpm_driver_data {
 	const char *ch_name;
 	uint32_t ch_type;
 	smd_channel_t *ch_info;
-	struct work_struct work;
 	spinlock_t smd_lock_write;
 	spinlock_t smd_lock_read;
 	struct completion smd_open;
@@ -85,8 +83,6 @@ int msm_rpm_unregister_notifier(struct notifier_block *nb)
 {
 	return atomic_notifier_chain_unregister(&msm_rpm_sleep_notifier, nb);
 }
-
-static struct workqueue_struct *msm_rpm_smd_wq;
 
 enum {
 	MSM_RPM_MSG_REQUEST_TYPE = 0,
@@ -528,8 +524,8 @@ static int msm_rpm_add_kvp_data_common(struct msm_rpm_request *handle,
 	if (probe_status)
 		return probe_status;
 
-	if (!handle) {
-		pr_err("%s(): Invalid handle\n", __func__);
+	if (!handle || !data) {
+		pr_err("%s(): Invalid handle/data\n", __func__);
 		return -EINVAL;
 	}
 
@@ -837,6 +833,7 @@ static inline int msm_rpm_get_error_from_ack(uint8_t *buf)
 	uint8_t *tmp;
 	uint32_t req_len = ((struct msm_rpm_ack_msg *)buf)->req_len;
 
+	struct msm_rpm_ack_msg *tmp_buf = (struct msm_rpm_ack_msg *)buf;
 	int rc = -ENODEV;
 
 	req_len -= sizeof(struct msm_rpm_ack_msg);
@@ -844,9 +841,15 @@ static inline int msm_rpm_get_error_from_ack(uint8_t *buf)
 	if (!req_len)
 		return 0;
 
+	pr_err("%s:rpm returned error or nack req_len: %d id_ack: %d\n",
+				__func__, tmp_buf->req_len, tmp_buf->id_ack);
+
 	tmp = buf + sizeof(struct msm_rpm_ack_msg);
 
-	BUG_ON(memcmp(tmp, ERR, sizeof(uint32_t)));
+	if (memcmp(tmp, ERR, sizeof(uint32_t))) {
+		pr_err("%s rpm returned error\n", __func__);
+		BUG_ON(1);
+	}
 
 	tmp += 2 * sizeof(uint32_t);
 
@@ -871,7 +874,10 @@ static int msm_rpm_read_smd_data(char *buf)
 	if (!pkt_sz)
 		return -EAGAIN;
 
-	BUG_ON(pkt_sz > MAX_ERR_BUFFER_SIZE);
+	if (pkt_sz > MAX_ERR_BUFFER_SIZE) {
+		pr_err("rpm_smd pkt_sz is greater than max size\n");
+		goto error;
+	}
 
 	if (pkt_sz != smd_read_avail(msm_rpm_data.ch_info))
 		return -EAGAIN;
@@ -885,7 +891,13 @@ static int msm_rpm_read_smd_data(char *buf)
 
 	} while (pkt_sz > 0);
 
-	BUG_ON(pkt_sz < 0);
+	if (pkt_sz < 0) {
+		pr_err("rpm_smd pkt_sz is less than zero\n");
+		goto error;
+	}
+	return 0;
+error:
+	BUG_ON(1);
 
 	return 0;
 }
@@ -1222,8 +1234,12 @@ int msm_rpm_wait_for_ack(uint32_t msg_id)
 		return rc;
 
 	rt_mutex_lock(&msm_rpm_smd_lock);
-	wait_for_completion(&elem->ack);
+	if (!wait_for_completion_timeout(&elem->ack, 50*HZ)) {
+		pr_err("%s TIMEOUT msg_id %d\n", __func__, msg_id);
+		BUG();
+	}
 	rt_mutex_unlock(&msm_rpm_smd_lock);
+
 	trace_rpm_ack_recd(0, msg_id);
 
 	rc = elem->errno;
@@ -1433,15 +1449,6 @@ static int msm_rpm_dev_probe(struct platform_device *pdev)
 	wait_for_completion(&msm_rpm_data.smd_open);
 
 	smd_disable_read_intr(msm_rpm_data.ch_info);
-
-	msm_rpm_smd_wq = alloc_workqueue("rpm-smd",
-			WQ_UNBOUND | WQ_MEM_RECLAIM | WQ_HIGHPRI, 1);
-	if (!msm_rpm_smd_wq) {
-		pr_err("%s: Unable to alloc rpm-smd workqueue\n", __func__);
-		ret = -EINVAL;
-		goto fail;
-	}
-	queue_work(msm_rpm_smd_wq, &msm_rpm_data.work);
 
 	probe_status = ret;
 skip_smd_init:
