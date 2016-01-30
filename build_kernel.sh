@@ -13,7 +13,7 @@ export CROSS_COMPILE=~/ubertc/aarch64-linux-android-6.0-kernel/bin/aarch64-linux
 
 #Make defconfig and here we go!
 make bullhead_defconfig
-echo "Let's Make zImage!"
+echo "Let's Make kernel!"
 make -j64
 
 #Check zImage.gz-dtb
