@@ -20,10 +20,10 @@ make -j64
 file="/home/nazunamoe/jolla/arch/arm64/boot/Image.gz-dtb"
 if [ -e $file ];then
 echo "Build succeed let's make zip package to flash"
-cp $file /home/nazunamoe/zip/jolla-kernel/bullhead/Image
-cd /home/nazunamoe/zip
-zip -r /home/nazunamoe/jolla-kernel_AIO_bullhead-unoffical-$(date '+%g%m%d').zip *
-cd /home/nazunamoe/jolla
+cp $file ~/zip/jolla-kernel/bullhead/Image
+cd ~/zip
+zip -r ~/jolla-kernel_AIO_bullhead-unoffical-$(date '+%g%m%d').zip *
+cd ~/jolla
 echo "Make succeed!"
 else
 echo "Build Failed"
