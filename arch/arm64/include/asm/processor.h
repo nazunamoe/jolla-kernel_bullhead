@@ -17,9 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include <asm-generic/processor.h>
-
 #ifndef __ASM_PROCESSOR_H
 #define __ASM_PROCESSOR_H
 
@@ -38,7 +35,6 @@
 #include <asm/ptrace.h>
 #include <asm/types.h>
 #include <asm/relaxed.h>
-#include <asm/atomic.h>
 
 #ifdef __KERNEL__
 #define STACK_TOP_MAX		TASK_SIZE_64
