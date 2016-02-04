@@ -297,8 +297,8 @@ static struct ctl_table kern_table[] = {
 	},
 #endif
 	{
-		.procname	= "sched_wakeup_load_threshold",
-		.data		= &sysctl_sched_wakeup_load_threshold,
+		.procname	= "sched_capacity_margin",
+		.data		= &sysctl_sched_capacity_margin,
 		.maxlen		= sizeof(unsigned int),
 		.mode		= 0644,
 		.proc_handler	= proc_dointvec,
@@ -334,6 +334,7 @@ static struct ctl_table kern_table[] = {
 		.mode           = 0644,
 		.proc_handler   = sched_window_update_handler,
 	},
+#ifdef TJK_HMP
 	{
 		.procname       = "sched_heavy_task",
 		.data           = &sysctl_sched_heavy_task_pct,
@@ -341,6 +342,7 @@ static struct ctl_table kern_table[] = {
 		.mode           = 0644,
 		.proc_handler   = sched_hmp_proc_update_handler,
 	},
+#endif
 #endif
 #ifdef CONFIG_SCHED_HMP
 	{
@@ -371,6 +373,7 @@ static struct ctl_table kern_table[] = {
 		.mode           = 0644,
 		.proc_handler   = sched_window_update_handler,
 	},
+#ifdef TJK_HMP
 	{
 		.procname	= "sched_small_task",
 		.data		= &sysctl_sched_small_task_pct,
@@ -392,6 +395,7 @@ static struct ctl_table kern_table[] = {
 		.mode		= 0644,
 		.proc_handler	= sched_hmp_proc_update_handler,
 	},
+#endif
 	{
 		.procname	= "sched_spill_nr_run",
 		.data		= &sysctl_sched_spill_nr_run,
@@ -400,6 +404,7 @@ static struct ctl_table kern_table[] = {
 		.proc_handler	= proc_dointvec_minmax,
 		.extra1		= &zero,
 	},
+#ifdef TJK_HMP
 	{
 		.procname	= "sched_upmigrate",
 		.data		= &sysctl_sched_upmigrate_pct,
@@ -435,6 +440,7 @@ static struct ctl_table kern_table[] = {
 		.mode		= 0644,
 		.proc_handler	= sched_hmp_proc_update_handler,
 	},
+#endif
 	{
 		.procname	= "sched_boost",
 		.data		= &sysctl_sched_boost,
@@ -445,15 +451,6 @@ static struct ctl_table kern_table[] = {
 	{
 		.procname	= "sched_enable_power_aware",
 		.data		= &sysctl_sched_enable_power_aware,
-		.maxlen		= sizeof(unsigned int),
-		.mode		= 0644,
-		.proc_handler	= sched_enable_power_aware_handler,
-		.extra1		= &zero,
-		.extra2		= &one,
-	},
-	{
-		.procname	= "power_aware_timer_migration",
-		.data		= &sysctl_power_aware_timer_migration,
 		.maxlen		= sizeof(unsigned int),
 		.mode		= 0644,
 		.proc_handler	= proc_dointvec_minmax,
@@ -488,20 +485,6 @@ static struct ctl_table kern_table[] = {
 		.proc_handler	= sched_proc_update_handler,
 		.extra1		= &min_wakeup_granularity_ns,
 		.extra2		= &max_wakeup_granularity_ns,
-	},
-	{
-		.procname	= "sched_yield_sleep_threshold",
-		.data		= &sysctl_sched_yield_sleep_threshold,
-		.maxlen		= sizeof(int),
-		.mode		= 0644,
-		.proc_handler	= proc_dointvec,
-	},
-	{
-		.procname	= "sched_yield_sleep_duration",
-		.data		= &sysctl_sched_yield_sleep_duration,
-		.maxlen		= sizeof(unsigned int),
-		.mode		= 0644,
-		.proc_handler	= proc_dointvec,
 	},
 #ifdef CONFIG_SMP
 	{
