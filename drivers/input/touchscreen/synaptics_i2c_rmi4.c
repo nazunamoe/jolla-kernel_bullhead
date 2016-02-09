@@ -43,6 +43,10 @@
 #include <linux/ksm.h>
 #endif
 
+#ifdef CONFIG_DYNAMIC_FSYNC
+#include <linux/dyn_sync_cntrl.h>
+#endif
+
 #ifdef CONFIG_MSM_HOTPLUG
 #include <linux/msm_hotplug.h>
 #endif
@@ -4675,7 +4679,7 @@ static void synaptics_rmi4_touch_off(struct work_struct *synaptics_rmi4_touch_of
 		return;
 	}
 
-	if (!scr_suspended || sovc_tmp_onoff) {
+	if (!scr_suspended || (sovc_tmp_onoff && !sovc_mic_detected)) {
 		synaptics_rmi4_touch_off_triggered = false;
 		return;
 	}
@@ -4802,6 +4806,11 @@ static int synaptics_rmi4_suspend(struct device *dev)
 #elif defined(CONFIG_KSM_LEGACY)
 	if (ksm_run_stored != KSM_RUN_STOP)
 		ksm_run = KSM_RUN_STOP;
+#endif
+
+#ifdef CONFIG_DYNAMIC_FSYNC
+	if (dyn_fsync_active)
+		dyn_fsync_suspend();
 #endif
 
 #ifdef CONFIG_MSM_HOTPLUG
