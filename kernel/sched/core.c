@@ -1825,7 +1825,6 @@ out:
  */
 int wake_up_process(struct task_struct *p)
 {
-	WARN_ON(task_is_stopped_or_traced(p));
 	return try_to_wake_up(p, TASK_NORMAL, 0);
 }
 EXPORT_SYMBOL(wake_up_process);
@@ -4533,6 +4532,7 @@ long __sched io_schedule_timeout(long timeout)
 	delayacct_blkio_end();
 	return ret;
 }
+EXPORT_SYMBOL(io_schedule_timeout);
 
 /**
  * sys_sched_get_priority_max - return maximum RT priority.

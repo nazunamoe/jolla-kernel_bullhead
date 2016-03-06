@@ -26,6 +26,10 @@
 #error KEXEC_CONTROL_MEMORY_LIMIT not defined
 #endif
 
+#ifndef KEXEC_CONTROL_MEMORY_GFP
+#define KEXEC_CONTROL_MEMORY_GFP GFP_KERNEL
+#endif
+
 #ifndef KEXEC_CONTROL_PAGE_SIZE
 #error KEXEC_CONTROL_PAGE_SIZE not defined
 #endif
@@ -89,8 +93,6 @@ struct kimage {
 	kimage_entry_t *entry;
 	kimage_entry_t *last_entry;
 
-	unsigned long destination;
-
 	unsigned long start;
 	struct page *control_code_page;
 	struct page *swap_page;
@@ -100,7 +102,7 @@ struct kimage {
 
 	struct list_head control_pages;
 	struct list_head dest_pages;
-	struct list_head unuseable_pages;
+	struct list_head unusable_pages;
 
 	/* Address of next control page to allocate for crash kernels. */
 	unsigned long control_page;
@@ -131,12 +133,6 @@ extern asmlinkage long sys_kexec_load(unsigned long entry,
 					struct kexec_segment __user *segments,
 					unsigned long flags);
 extern int kernel_kexec(void);
-#ifdef CONFIG_COMPAT
-extern asmlinkage long compat_sys_kexec_load(unsigned long entry,
-				unsigned long nr_segments,
-				struct compat_kexec_segment __user *segments,
-				unsigned long flags);
-#endif
 extern struct page *kimage_alloc_control_pages(struct kimage *image,
 						unsigned int order);
 extern void crash_kexec(struct pt_regs *);
@@ -179,6 +175,7 @@ bool arch_kexec_is_hardboot_buffer_range(unsigned long start,
 
 extern struct kimage *kexec_image;
 extern struct kimage *kexec_crash_image;
+extern int kexec_load_disabled;
 
 #ifndef kexec_flush_icache_page
 #define kexec_flush_icache_page(page)
