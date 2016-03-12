@@ -64,7 +64,7 @@
         printk(KERN_ERR "Assertion failed! %s:%s %s:%d\n",   \
               #expr, __FUNCTION__, __FILE__, __LINE__);      \
         dump_stack();                                      \
-        panic("Take care of the assert first\n");          \
+        BUG_ON(1);          \
     }     \
 }while(0)
 
@@ -111,6 +111,18 @@ __adf_os_init_completion(adf_os_comp_t *ptr)
 	init_completion(ptr);
 }
 
+/**
+ * @brief completion structure re-initialization
+ */
+static __adf_os_inline void
+__adf_os_re_init_completion(adf_os_comp_t comp)
+{
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
+	reinit_completion(&comp);
+#else
+	INIT_COMPLETION(comp);
+#endif
+}
 
 /**
  * @brief wait for completion till timeout

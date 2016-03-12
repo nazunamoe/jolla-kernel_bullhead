@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2013-2016 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -48,21 +48,26 @@
 #endif /* WLAN_OPEN_SOURCE */
 #include "wmi_unified_priv.h"
 
+#ifdef MULTI_IF_NAME
+#define CLD_DEBUGFS_DIR          "cld" MULTI_IF_NAME
+#else
 #define CLD_DEBUGFS_DIR          "cld"
+#endif
 #define DEBUGFS_BLOCK_NAME       "dbglog_block"
 
 #define ATH_MODULE_NAME fwlog
 #include <a_debug.h>
 #define FWLOG_DEBUG   ATH_DEBUG_MAKE_MODULE_MASK(0)
 
-#if defined(DEBUG)
-
 static bool appstarted = FALSE;
 static bool senddriverstatus = FALSE;
 static bool kd_nl_init = FALSE;
-static int cnss_diag_pid = 0;
+static int cnss_diag_pid = INVALID_PID;
 static int get_version = 0;
 static int gprint_limiter = 0;
+static bool tgt_assert_enable = 0;
+
+#if defined(DEBUG)
 
 static ATH_DEBUG_MASK_DESCRIPTION g_fwlogDebugDescription[] = {
     {FWLOG_DEBUG,"fwlog"},
@@ -1644,12 +1649,6 @@ send_fw_diag_nl_data(wmi_unified_t wmi_handle, const u_int8_t *buffer,
     if (nl_srv_is_initialized() != 0)
         return -EIO;
 
-    /* NL is not ready yet, WLAN KO started first */
-    if ((kd_nl_init) && (!cnss_diag_pid))
-    {
-        nl_srv_nl_ready_indication();
-    }
-
     if (vos_is_multicast_logging())
     {
         skb_out = nlmsg_new(len, 0);
@@ -1686,12 +1685,7 @@ send_diag_netlink_data(const u_int8_t *buffer,
         return -ENODEV;
 
     if (nl_srv_is_initialized() != 0)
-        return -EIO;
-
-    /* NL is not ready yet, WLAN KO started first */
-    if ((kd_nl_init) && (!cnss_diag_pid)) {
-        nl_srv_nl_ready_indication();
-    }
+	return -EIO;
 
     if (vos_is_multicast_logging()) {
         slot_len = sizeof(*slot) + ATH6KL_FWLOG_PAYLOAD_SIZE;
@@ -1737,13 +1731,7 @@ dbglog_process_netlink_data(wmi_unified_t wmi_handle, const u_int8_t *buffer,
         return -ENODEV;
 
     if (nl_srv_is_initialized() != 0)
-            return -EIO;
-
-    /* NL is not ready yet, WLAN KO started first */
-    if ((kd_nl_init) && (!cnss_diag_pid))
-    {
-        nl_srv_nl_ready_indication();
-    }
+	    return -EIO;
 
     if (vos_is_multicast_logging())
     {
@@ -1965,7 +1953,7 @@ dbglog_parse_debug_logs(ol_scn_t scn, u_int8_t *data, u_int32_t datalen)
 
     dropped = *((A_UINT32 *)datap);
     if (dropped > 0) {
-        AR_DEBUG_PRINTF(ATH_DEBUG_INFO, ("%d log buffers are dropped \n", dropped));
+        AR_DEBUG_PRINTF(ATH_DEBUG_TRC , ("%d log buffers are dropped \n", dropped));
     }
     datap += sizeof(dropped);
     len -= sizeof(dropped);
@@ -4026,6 +4014,11 @@ int cnss_diag_msg_callback(struct sk_buff *skb)
             AR_DEBUG_PRINTF(ATH_DEBUG_INFO,
                            ("%s : DIAG_TYPE_CRASH_INJECT: %d %d\n", __func__,
                            slot->payload[0], slot->payload[1]));
+            if (!tgt_assert_enable) {
+                AR_DEBUG_PRINTF(ATH_DEBUG_INFO,
+                               ("%s: tgt Assert Disabled\n", __func__));
+                return 0;
+            }
             process_wma_set_command_twoargs(0,
                                            (int)GEN_PARAM_CRASH_INJECT,
                                            slot->payload[0],
@@ -4056,7 +4049,6 @@ int cnss_diag_notify_wlan_close()
     if (0 != cnss_diag_pid)
     {
         cnss_diag_send_driver_unloaded();
-        nl_srv_nl_close_indication(cnss_diag_pid);
         cnss_diag_pid = 0;
     }
     return 0;
@@ -4102,8 +4094,7 @@ dbglog_wow_print_handler(
 	case WOW_NS_OFLD_ENABLE:
 		if (4 == numargs) {
 			dbglog_printf(timestamp, vap_id,
-                "Enable NS offload, for sender %02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x\
-                :%02x%02x:%02x%02x:%02x%02x",
+                "Enable NS offload, for sender %02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x",
 				      *(A_UINT8*)&args[0], *((A_UINT8*)&args[0]+1), *((A_UINT8*)&args[0]+2), *((A_UINT8*)&args[0]+3),
 				      *(A_UINT8*)&args[1], *((A_UINT8*)&args[1]+1), *((A_UINT8*)&args[1]+2), *((A_UINT8*)&args[1]+3),
 				      *(A_UINT8*)&args[2], *((A_UINT8*)&args[2]+1), *((A_UINT8*)&args[2]+2), *((A_UINT8*)&args[2]+3),
@@ -4131,8 +4122,7 @@ dbglog_wow_print_handler(
 	case WOW_NS_RECEIVED:
 		if (4 == numargs) {
 			dbglog_printf(timestamp, vap_id,
-                "NS requested from %02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x\
-                :%02x%02x:%02x%02x:%02x%02x",
+				      "NS requested from %02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x",
 				      *(A_UINT8*)&args[0], *((A_UINT8*)&args[0]+1), *((A_UINT8*)&args[0]+2), *((A_UINT8*)&args[0]+3),
 				      *(A_UINT8*)&args[1], *((A_UINT8*)&args[1]+1), *((A_UINT8*)&args[1]+2), *((A_UINT8*)&args[1]+3),
 				      *(A_UINT8*)&args[2], *((A_UINT8*)&args[2]+1), *((A_UINT8*)&args[2]+2), *((A_UINT8*)&args[2]+3),
@@ -4144,8 +4134,7 @@ dbglog_wow_print_handler(
 	case WOW_NS_REPLIED:
 		if (4 == numargs) {
 			dbglog_printf(timestamp, vap_id,
-                "NS replied to %02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x\
-                :%02x%02x:%02x%02x:%02x%02x",
+				      "NS replied to %02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x",
 				      *(A_UINT8*)&args[0], *((A_UINT8*)&args[0]+1), *((A_UINT8*)&args[0]+2), *((A_UINT8*)&args[0]+3),
 				      *(A_UINT8*)&args[1], *((A_UINT8*)&args[1]+1), *((A_UINT8*)&args[1]+2), *((A_UINT8*)&args[1]+3),
 				      *(A_UINT8*)&args[2], *((A_UINT8*)&args[2]+1), *((A_UINT8*)&args[2]+2), *((A_UINT8*)&args[2]+3),
@@ -4213,7 +4202,7 @@ dbglog_init(wmi_unified_t wmi_handle)
     dbglog_reg_modprint(WLAN_MODULE_PCIELP, dbglog_pcielp_print_handler);
     dbglog_reg_modprint(WLAN_MODULE_IBSS_PWRSAVE,
                         dbglog_ibss_powersave_print_handler);
-
+    tgt_assert_enable = wmi_handle->tgt_force_assert_enable;
     /* Register handler for F3 or debug messages */
     res = wmi_unified_register_event_handler(wmi_handle, WMI_DEBUG_MESG_EVENTID,
                        dbglog_parse_debug_logs);
@@ -4260,6 +4249,7 @@ dbglog_deinit(wmi_unified_t wmi_handle)
     dbglog_debugfs_remove(wmi_handle);
 #endif /* WLAN_OPEN_SOURCE */
 
+    tgt_assert_enable = 0;
     res = wmi_unified_unregister_event_handler(wmi_handle, WMI_DEBUG_MESG_EVENTID);
     if(res != 0)
         return res;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2011-2015 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -198,7 +198,7 @@ void cmac_calc_mic(struct crypto_cipher *tfm, u8 *m,
         xor_128(x, m_last, y);
         crypto_cipher_encrypt_one(tfm, x, y);
 
-        memcpy(mac, x, CMAC_TLEN);
+        vos_mem_copy(mac, x, CMAC_TLEN);
 }
 #endif
 #endif
@@ -406,6 +406,7 @@ vos_attach_mmie(v_U8_t *igtk, v_U8_t *ipn, u_int16_t key_id,
     if (IS_ERR(tfm))
     {
         ret = PTR_ERR(tfm);
+        tfm = NULL;
         VOS_TRACE(VOS_MODULE_ID_VOSS,VOS_TRACE_LEVEL_ERROR,
              "%s: crypto_alloc_cipher failed (%d)", __func__, ret);
         goto err_tfm;
@@ -530,6 +531,7 @@ v_BOOL_t vos_is_mmie_valid(v_U8_t *igtk, v_U8_t *ipn,
 #endif
     if (IS_ERR(tfm)) {
         ret = PTR_ERR(tfm);
+        tfm = NULL;
         VOS_TRACE(VOS_MODULE_ID_VOSS,VOS_TRACE_LEVEL_ERROR,
              "crypto_alloc_cipher failed (%d)", ret);
         goto err_tfm;
@@ -696,7 +698,7 @@ int hmac_sha1(v_U8_t *key, v_U8_t ksize, char *plaintext, v_U8_t psize,
     }
 
     memset(hash_result, 0, 64);
-    memcpy(hash_buff, plaintext, psize);
+    vos_mem_copy(hash_buff, plaintext, psize);
     sg_init_one(&sg, hash_buff, psize);
 
     if (ksize) {
@@ -730,6 +732,8 @@ int hmac_sha1(v_U8_t *key, v_U8_t ksize, char *plaintext, v_U8_t psize,
     case -EBUSY:
         ret = wait_for_completion_interruptible(&tresult.completion);
         if (!ret && !tresult.err) {
+            for (i = 0; i < outlen; i++)
+               output[i] = hash_result[i];
             INIT_COMPLETION(tresult.completion);
             break;
         } else {
@@ -867,7 +871,7 @@ int hmac_md5(v_U8_t *key, v_U8_t ksize, char *plaintext, v_U8_t psize,
     }
 
     memset(hash_result, 0, 64);
-    memcpy(hash_buff, plaintext, psize);
+    vos_mem_copy(hash_buff, plaintext, psize);
     sg_init_one(&sg, hash_buff, psize);
 
     if (ksize) {
@@ -901,6 +905,8 @@ int hmac_md5(v_U8_t *key, v_U8_t ksize, char *plaintext, v_U8_t psize,
         case -EBUSY:
              ret = wait_for_completion_interruptible(&tresult.completion);
              if (!ret && !tresult.err) {
+                 for (i = 0; i < outlen; i++)
+                    output[i] = hash_result[i];
                   INIT_COMPLETION(tresult.completion);
                   break;
              } else {
@@ -1194,6 +1200,8 @@ v_U32_t vos_chan_to_freq(v_U8_t chan)
     else if (chan < VOS_24_GHZ_CHANNEL_27)  // ch 15 - ch 26
         return VOS_CHAN_15_FREQ +
                (chan - VOS_24_GHZ_CHANNEL_15) * VOS_CHAN_SPACING_20MHZ;
+    else if (chan == VOS_5_GHZ_CHANNEL_170)
+        return VOS_CHAN_170_FREQ;
      else
         return VOS_5_GHZ_BASE_FREQ + chan * VOS_CHAN_SPACING_5MHZ;
 }

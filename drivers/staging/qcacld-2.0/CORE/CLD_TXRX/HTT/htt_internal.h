@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2014 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2011, 2015 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -364,6 +364,9 @@ void
 htt_t2h_msg_handler(void *context, HTC_PACKET *pkt);
 
 void
+htt_tx_resume_handler(void *);
+
+void
 htt_h2t_send_complete(void *context, HTC_PACKET *pkt);
 
 A_STATUS
@@ -418,5 +421,20 @@ htt_tx_ipa_uc_detach(struct htt_pdev_t *pdev);
 int
 htt_rx_ipa_uc_detach(struct htt_pdev_t *pdev);
 #endif /* IPA_UC_OFFLOAD */
+
+/* Maximum Outstanding Bus Download */
+#define HTT_MAX_BUS_CREDIT 33
+
+int
+htt_tx_credit_update(struct htt_pdev_t *pdev);
+
+#ifdef FEATURE_HL_GROUP_CREDIT_FLOW_CONTROL
+#define HTT_TX_GROUP_INDEX_OFFSET \
+    (sizeof(struct htt_txq_group) / sizeof(u_int32_t))
+void htt_tx_group_credit_process(struct htt_pdev_t *pdev, u_int32_t *msg_word);
+#define HTT_TX_GROUP_CREDIT_PROCESS htt_tx_group_credit_process
+#else
+#define HTT_TX_GROUP_CREDIT_PROCESS(pdev, msg_word) /* no-op */
+#endif
 
 #endif /* _HTT_INTERNAL__H_ */

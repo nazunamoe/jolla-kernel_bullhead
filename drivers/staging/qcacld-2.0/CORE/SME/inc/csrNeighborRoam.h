@@ -211,6 +211,7 @@ typedef struct sCsrNeighborRoamControlInfo
     tANI_U8                     currentRoamBmissFirstBcnt;
     tANI_U8                     currentRoamBmissFinalBcnt;
     tANI_U8                     currentRoamBeaconRssiWeight;
+    tANI_U8                     lastSentCmd;
 } tCsrNeighborRoamControlInfo, *tpCsrNeighborRoamControlInfo;
 
 /* All the necessary Function declarations are here */
@@ -230,7 +231,7 @@ VOS_STATUS csrNeighborRoamTransitionToPreauthDone(tpAniSirGlobal pMac);
 eHalStatus csrNeighborRoamPrepareScanProfileFilter(tpAniSirGlobal pMac,
                                               tCsrScanResultFilter *pScanFilter,
                                               tANI_U8 sessionId);
-void csrNeighborRoamGetHandoffAPInfo(tpAniSirGlobal pMac,
+bool csrNeighborRoamGetHandoffAPInfo(tpAniSirGlobal pMac,
                                      tpCsrNeighborRoamBSSInfo pHandoffNode,
                                      tANI_U8 sessionId);
 eHalStatus csrNeighborRoamPreauthRspHandler(tpAniSirGlobal pMac,

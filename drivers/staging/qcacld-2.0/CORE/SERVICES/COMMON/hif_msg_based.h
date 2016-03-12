@@ -1,5 +1,5 @@
 /*
- *Copyright (c) 2013-2014 The Linux Foundation. All rights reserved.
+ *Copyright (c) 2013-2015 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -49,6 +49,7 @@ typedef struct {
 					u_int8_t pipeID);
 	void     (*txResourceAvailHandler)(void *context, u_int8_t pipe);
 	void     (*fwEventHandler)(void *context, A_STATUS status);
+	void     (*txResumeAllHandler)(void *context);
 } MSG_BASED_HIF_CALLBACKS;
 
 int HIF_deregister(void);
@@ -143,6 +144,9 @@ u_int16_t HIFGetMaxQueueNumber(HIF_DEVICE *hifDevice, u_int8_t PipeID);
 void HIFDumpInfo(HIF_DEVICE *hifDevice);
 void *hif_get_targetdef(HIF_DEVICE *hif_device);
 void HIFsuspendwow(HIF_DEVICE *hif_device);
+#if defined(HIF_SDIO) || defined(HIF_USB)
+void HIFSetBundleMode(HIF_DEVICE *hif_device, bool enabled, int rx_bundle_cnt);
+#endif
 
 #ifdef __cplusplus
 }

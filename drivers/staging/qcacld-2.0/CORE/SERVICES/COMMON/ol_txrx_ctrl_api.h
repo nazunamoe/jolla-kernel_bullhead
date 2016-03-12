@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2011-2015 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -46,8 +46,8 @@
 /**
  * @brief modes that a virtual device can operate as
  * @details
- * A virtual device can operate as an AP, an IBSS, or a STA (client).
- * or in monitor mode
+ * A virtual device can operate as an AP, an IBSS, a STA (client),
+ * in monitor mode or in OCB mode
  */
 enum wlan_op_mode {
 	wlan_op_mode_unknown,
@@ -55,12 +55,25 @@ enum wlan_op_mode {
 	wlan_op_mode_ibss,
 	wlan_op_mode_sta,
 	wlan_op_mode_monitor,
+	wlan_op_mode_ocb,
 };
 
 #define OL_TXQ_PAUSE_REASON_FW                (1 << 0)
 #define OL_TXQ_PAUSE_REASON_PEER_UNAUTHORIZED (1 << 1)
 #define OL_TXQ_PAUSE_REASON_TX_ABORT          (1 << 2)
 #define OL_TXQ_PAUSE_REASON_VDEV_STOP         (1 << 3)
+#define OL_TXQ_PAUSE_REASON_VDEV_SUSPEND      (1 << 4)
+
+/* command options for dumpStats*/
+#define WLAN_HDD_STATS               0
+#define WLAN_TXRX_STATS              1
+#define WLAN_TXRX_HIST_STATS         2
+#ifdef CONFIG_HL_SUPPORT
+#define WLAN_SCHEDULER_STATS        21
+#define WLAN_TX_QUEUE_STATS         22
+#define WLAN_BUNDLE_STATS           23
+#define WLAN_CREDIT_STATS           24
+#endif
 
 /**
  * @brief Set up the data SW subsystem.
@@ -393,37 +406,45 @@ ol_txrx_throttle_unpause(ol_txrx_pdev_handle data_pdev);
 #endif /* CONFIG_HL_SUPPORT */
 
 /**
- * @brief Suspend all tx data for the specified physical device.
- * @details
- *  This function applies only to HL systems - in LL systems, tx flow control
- *  is handled entirely within the target FW.
- *  In some systems it is necessary to be able to temporarily
- *  suspend all WLAN traffic, e.g. to allow another device such as bluetooth
- *  to temporarily have exclusive access to shared RF chain resources.
- *  This function suspends tx traffic within the specified physical device.
+ * ol_txrx_pdev_pause() - Suspend all tx data for the specified physical device.
+ * @data_pdev: the physical device being paused.
+ * @reason:  pause reason.
+ *		One can provide multiple line descriptions
+ *		for arguments.
  *
- * @param data_pdev - the physical device being paused
+ * This function applies to HL systems -
+ * in LL systems, applies when txrx_vdev_pause_all is enabled.
+ * In some systems it is necessary to be able to temporarily
+ * suspend all WLAN traffic, e.g. to allow another device such as bluetooth
+ * to temporarily have exclusive access to shared RF chain resources.
+ * This function suspends tx traffic within the specified physical device.
+ *
+ *
+ * Return: None
  */
-#if defined(CONFIG_HL_SUPPORT)
+#if defined(CONFIG_HL_SUPPORT) || defined(QCA_SUPPORT_TXRX_VDEV_PAUSE_LL)
 void
-ol_txrx_pdev_pause(ol_txrx_pdev_handle data_pdev);
+ol_txrx_pdev_pause(ol_txrx_pdev_handle data_pdev, u_int32_t reason);
 #else
-#define ol_txrx_pdev_pause(data_pdev) /* no-op */
+#define ol_txrx_pdev_pause(data_pdev,reason) /* no-op */
 #endif /* CONFIG_HL_SUPPORT */
 
 /**
- * @brief Resume tx for the specified physical device.
- * @details
- *  This function applies only to HL systems - in LL systems, tx flow control
- *  is handled entirely within the target FW.
+ * ol_txrx_pdev_unpause() - Resume tx for the specified physical device..
+ * @data_pdev: the physical device being paused.
+ * @reason:  pause reason.
  *
- * @param data_pdev - the physical device being unpaused
+ *  This function applies to HL systems -
+ *  in LL systems, applies when txrx_vdev_pause_all is enabled.
+ *
+ *
+ * Return: None
  */
-#if defined(CONFIG_HL_SUPPORT)
+#if defined(CONFIG_HL_SUPPORT) || defined(QCA_SUPPORT_TXRX_VDEV_PAUSE_LL)
 void
-ol_txrx_pdev_unpause(ol_txrx_pdev_handle data_pdev);
+ol_txrx_pdev_unpause(ol_txrx_pdev_handle data_pdev, u_int32_t reason);
 #else
-#define ol_txrx_pdev_unpause(data_pdev) /* no-op */
+#define ol_txrx_pdev_unpause(data_pdev,reason) /* no-op */
 #endif /* CONFIG_HL_SUPPORT */
 
 /**
@@ -656,6 +677,8 @@ ol_txrx_set_curchan(
 int
 ol_txrx_get_tx_pending(
     ol_txrx_pdev_handle pdev);
+
+void ol_txrx_dump_tx_desc(ol_txrx_pdev_handle pdev);
 
 /**
  * @brief Discard all tx frames that are pending in txrx.
@@ -1106,11 +1129,61 @@ ol_txrx_ll_set_tx_pause_q_depth(
 );
 #endif /* QCA_LL_TX_FLOW_CT */
 
+#if defined(CONFIG_HL_SUPPORT) && defined(QCA_BAD_PEER_TX_FLOW_CL)
+/**
+ * @brief Configure the bad peer tx limit setting.
+ * @details
+ *
+ * @param pdev - the physics device
+ */
+void
+ol_txrx_bad_peer_txctl_set_setting(
+	struct ol_txrx_pdev_t *pdev,
+	int enable,
+	int period,
+	int txq_limit);
+#else
+static inline void
+ol_txrx_bad_peer_txctl_set_setting(
+	struct ol_txrx_pdev_t *pdev,
+	int enable,
+	int period,
+	int txq_limit)
+{
+    /* no-op */
+}
+#endif /* defined(CONFIG_HL_SUPPORT) && defined(QCA_BAD_PEER_TX_FLOW_CL) */
+
+#if defined(CONFIG_HL_SUPPORT) && defined(QCA_BAD_PEER_TX_FLOW_CL)
+/**
+ * @brief Configure the bad peer tx threshold limit
+ * @details
+ *
+ * @param pdev - the physics device
+ */
+void
+ol_txrx_bad_peer_txctl_update_threshold(
+	struct ol_txrx_pdev_t *pdev,
+	int level,
+	int tput_thresh,
+	int tx_limit);
+#else
+static inline void
+ol_txrx_bad_peer_txctl_update_threshold(
+	struct ol_txrx_pdev_t *pdev,
+	int level,
+	int tput_thresh,
+	int tx_limit)
+{
+    /* no-op */
+}
+#endif /* defined(CONFIG_HL_SUPPORT) && defined(QCA_BAD_PEER_TX_FLOW_CL) */
+
 #ifdef IPA_UC_OFFLOAD
 /**
  * @brief Client request resource information
  * @details
- *  OL client will reuqest IPA UC related resource information
+d *  OL client will reuqest IPA UC related resource information
  *  Resource information will be distributted to IPA module
  *  All of the required resources should be pre-allocated
  *
@@ -1241,5 +1314,21 @@ void ol_txrx_ipa_uc_get_stat(ol_txrx_pdev_handle pdev);
 
 #define ol_txrx_ipa_uc_get_stat(pdev) /* NO-OP */
 #endif /* IPA_UC_OFFLOAD */
+
+/**
+ * @brief Setter function to store OCB Peer.
+ */
+void ol_txrx_set_ocb_peer(struct ol_txrx_pdev_t *pdev, struct ol_txrx_peer_t *peer);
+
+/**
+ * @brief Getter function to retrieve OCB peer.
+ * @details
+ *      Returns A_TRUE if ocb_peer is valid
+ *      Otherwise, returns A_FALSE
+ */
+a_bool_t ol_txrx_get_ocb_peer(struct ol_txrx_pdev_t *pdev, struct ol_txrx_peer_t **peer);
+
+void ol_txrx_display_stats(struct ol_txrx_pdev_t *pdev, uint16_t bitmap);
+void ol_txrx_clear_stats(struct ol_txrx_pdev_t *pdev, uint16_t bitmap);
 
 #endif /* _OL_TXRX_CTRL_API__H_ */
